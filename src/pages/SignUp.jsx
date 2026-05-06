@@ -1,13 +1,48 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import CoinbaseLogo from '../assets/coinbaseLogoNavigation-4.svg'
+import { authService } from '../services/authService'
 
 const SignUp = () => {
+  const navigate = useNavigate()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [cookieDismissed, setCookieDismissed] = useState(false)
 
-  const handleContinue = (e) => {
+  const handleContinue = async (e) => {
     e.preventDefault()
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      setIsSubmitting(true)
+      await authService.register({ name, email, password })
+      setSuccessMessage('Account created successfully. You can now sign in.')
+      setName('')
+      setEmail('')
+      setPassword('')
+      setTimeout(() => navigate('/signin'), 900)
+    } catch (err) {
+      const apiMsg = err.response?.data?.message
+      const status = err.response?.status
+      let msg = apiMsg
+      if (!msg) {
+        if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+          msg = `Cannot reach the API at ${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api'}. Is the backend running, and is the port correct?`
+        } else if (status === 403 || status === 0) {
+          msg = 'Request blocked (often CORS). Try another browser tab or confirm backend allows your dev server origin.'
+        } else {
+          msg = err.message || 'Failed to create account'
+        }
+      }
+      setError(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -27,6 +62,22 @@ const SignUp = () => {
           </h1>
 
           <form onSubmit={handleContinue} className="flex flex-col gap-4">
+            {/* Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-white font-medium">
+                Name<span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your full name"
+                required
+                className="w-full px-4 py-4 rounded-xl text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                style={{ backgroundColor: '#1c1d20', border: '1px solid #2e2f33' }}
+              />
+            </div>
+
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-white font-medium">
@@ -43,12 +94,33 @@ const SignUp = () => {
               />
             </div>
 
+            {/* Password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-white font-medium">
+                Password<span className="text-red-400">*</span>
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password"
+                required
+                minLength={6}
+                className="w-full px-4 py-4 rounded-xl text-white placeholder-gray-500 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                style={{ backgroundColor: '#1c1d20', border: '1px solid #2e2f33' }}
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {successMessage && <p className="text-sm text-green-400">{successMessage}</p>}
+
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full py-4 rounded-full text-white font-bold text-sm transition-opacity hover:opacity-90"
               style={{ backgroundColor: '#3d5af1' }}
             >
-              Continue
+              {isSubmitting ? 'Creating account...' : 'Continue'}
             </button>
           </form>
 
