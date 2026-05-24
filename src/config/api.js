@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api'||"https://interim-assessment-22047836-1.onrender.com";
+const API_BASE_URL = "https://interim-assessment-22047836-1.onrender.com/api";
 
 export const API = {
   // Auth
